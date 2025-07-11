@@ -30,12 +30,18 @@ class SieuTamPhim : MainAPI() {
         val iframe = doc.selectFirst("iframe[src*='helvid']")?.attr("src")
             ?: throw ErrorLoadingException("Không tìm thấy iframe Helvid")
 
-        return newMovieLoadResponse(title, url, TvType.Movie, iframe) {
-            this.loadLinks = { _, subtitleCallback, callback ->
-                HelvidExtractor().extract(iframe, referer = url).forEach {
-                    callback(it)
-                }
-            }
+        return newMovieLoadResponse(title, url, TvType.Movie, iframe)
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        HelvidExtractor().extract(data, referer = mainUrl).forEach {
+            callback(it)
         }
+        return true
     }
 }
