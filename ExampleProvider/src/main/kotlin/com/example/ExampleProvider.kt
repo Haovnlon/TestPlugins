@@ -30,11 +30,11 @@ class SieuTamPhim : MainAPI() {
         val iframe = doc.selectFirst("iframe[src*='helvid']")?.attr("src")
             ?: throw ErrorLoadingException("Không tìm thấy iframe Helvid")
 
-        val videos = HelvidExtractor().extract(iframe, referer = url)
-
         return newMovieLoadResponse(title, url, TvType.Movie, iframe) {
-            videos.forEach { video ->
-                addSource(video)
+            this.loadLinks = { _, subtitleCallback, callback ->
+                HelvidExtractor().extract(iframe, referer = url).forEach {
+                    callback(it)
+                }
             }
         }
     }
