@@ -1,21 +1,33 @@
 package com.example
 
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class HelvidExtractor : ExtractorApi() {
     override val name = "Helvid"
-    override val mainUrl = "https://helvid.net"
+    override val mainUrl = "https://helvid.com"
+    override val requiresReferer = true
 
-    override suspend fun extract(url: String, referer: String?): List<ExtractorLink> {
-        val id = url.substringAfter("/e/").substringBefore(".html")
-        val res = app.post("$mainUrl/api/source/$id", headers = mapOf("referer" to url)).parsed<HelvidResponse>()
-        return res.data.map {
-            ExtractorLink(name, mainUrl, it.file, referer ?: url, getQualityFromName(it.label), isM3u8 = true)
-        }
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val videoUrl = app.get(url, referer = referer).document
+            .selectFirst("video > source")?.attr("src") ?: return
+
+        callback(
+            newExtractorLink(
+                name,
+                name,
+                videoUrl,
+                referer = referer,
+                quality = getQualityFromName(videoUrl)
+            )
+        )
     }
-
-    data class HelvidResponse(val data: List<Source>)
-    data class Source(val file: String, val label: String)
 }
